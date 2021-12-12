@@ -1,10 +1,13 @@
 import { Container } from 'react-bootstrap';
 import Game from './game';
+import { BlockchainProvider } from '../blockchain';
 
 function App() {
     return (
         <Container>
-            <Game />
+            <BlockchainProvider>
+                <Game />
+            </BlockchainProvider>
         </Container>
     );
 }

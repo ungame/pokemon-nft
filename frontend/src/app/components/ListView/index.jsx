@@ -1,20 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { BaseURL } from '../../../api';
-import { Col, Row, Modal, Button } from 'react-bootstrap';
+import { Col, Row, Modal, Button, Card } from 'react-bootstrap';
 import Loading from '../Loading';
 import { dupList, shuffle, base64ToImage } from '../../../utils';
 import View from '../View';
 import { v4 as uuidv4 } from 'uuid';
 
 
-function ListView({ pokemons }) {
+function ListView({ pokemons, onMint, tokens }) {
     const [gifs, setGifs] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedItems, setSelectedItems] = useState([]);
     const [showModal, setShowModal] = useState(false);
     const [matchedItems, setMatchedItems] = useState([]);
     const [failures, setFailures] = useState(0);
+    const [currentTokens, setCurrentTokens] = useState([]);
 
     useEffect(async () => {
 
@@ -43,12 +44,30 @@ function ListView({ pokemons }) {
 
     }, []);
 
-    useEffect(() => {
+    useEffect(async () => {
+        let items = [];
+
+        for(let i = 0; i < tokens.length; i++) {
+            const token = tokens[i];
+            const response = await axios.get(token.uri);
+            items.push({ ...response.data });
+        }
+
+        setCurrentTokens(items);
+
+    }, [tokens])
+
+    useEffect(async () => {
         if(selectedItems.length === 2) {
             const [first, second] = selectedItems;
             
             if (first.name === second.name) {
                 setMatchedItems(matchedItems.concat([...selectedItems]));
+                
+                setLoading(true);
+                
+                await onMint(first.uri, () => setLoading(false));
+
                 setGifs(shuffle(gifs));
             } else {
                 setFailures(failures + 1);
@@ -109,28 +128,60 @@ function ListView({ pokemons }) {
                 </Col>
             </Row>
 
-            <Row>
-                <Col>
-                    <p className="alert alert-info text-center">
-                        Se errar 7 vezes ou encontrar 1 combinação, os pokemons serão embaralhados...
-                    </p>
-                    <h3>Erros: {failures}</h3>
+            <Row className="mt-5">
+                <Col md={12}>
+
+                    <Card>
+                        <Card.Header as="h5">Tente encontrar dois pokemons iguais</Card.Header>
+                        <Card.Body>
+                        { gifs.map((gif) => (
+                            <View 
+                                key={gif.id}
+                                onSelect={onSelect} 
+                                selected={selectedItems} 
+                                matched={matchedItems}
+                                pokemon={gif} 
+                            />
+                        )) }
+                        </Card.Body>
+                    </Card>
+          
                 </Col>
             </Row>
 
-            <Row className="mt-5">
-                <Col md={12} style={{ ...center, flexWrap: 'wrap', gap: '75px'}}>
-                { gifs.map((gif) => (
-                    <View 
-                        key={gif.id}
-                        onSelect={onSelect} 
-                        selected={selectedItems} 
-                        matched={matchedItems}
-                        pokemon={gif} 
-                    />
-                )) }
+            <Row className='mt-5'>
+                <Col>
+                    <Card>
+                        <Card.Header as="h5">Erros: {failures}</Card.Header>
+                        <Card.Body>
+                            <p className='text-mudated'>
+                                <small >
+                                    Se errar 7 vezes ou encontrar 1 combinação, os pokemons serão embaralhados...
+                                </small>
+                            </p>
+                        </Card.Body>
+                    </Card>
                 </Col>
             </Row>
+
+            {
+                currentTokens.length > 0 && (
+                    <div className='mt-5'>
+                        <Row>
+                            <Col>
+                                <Card>
+                                    <Card.Header as="h5">Meus Pokemons: {currentTokens.length}</Card.Header>
+                                    <Card.Body>
+                                        {currentTokens.map(token => {
+                                            return <img src={base64ToImage(token.gif)} alt={token.name} />
+                                        })}
+                                    </Card.Body>
+                                </Card>
+                            </Col>
+                        </Row>
+                    </div>
+                )
+            }
 
             <Modal
                 show={showModal}
@@ -163,7 +214,7 @@ function ListView({ pokemons }) {
                 </Modal.Body>
                 <Modal.Footer>
                     <Button variant={hasMatched() ? 'success' : 'danger'} onClick={onCloseModal}>
-                        {hasMatched() ? 'Reivindicar' : 'Tentar novamente'}
+                        {hasMatched() ? 'Continuar' : 'Tentar novamente'}
                     </Button>
                 </Modal.Footer>
             </Modal>

@@ -164,3 +164,17 @@ truffle migrate --reset
 - Selecionar o arquivo `truffle-config.js`
 - Clicar em Abrir
 - Clicar em "SAVE AND RESTART"
+
+## Instalar o Web3 no Frontend
+
+```bash
+npm install web3
+```
+
+## Configurar Smart Contract no Frontend
+
+> Dentro do projeto iniciado com o `truffle init` e compilado com o `truffle compile`, tem um diretório "build/contracts"
+
+- Criar um diretório `blockchain` no diretório `src` do frontend
+- Copiar o diretório `contracts` do projeto compilado com truffle para o diretório blockchain do frontend
+- Criar um provider de conexão com a metamask para fazer chamadas parar a blockchain
